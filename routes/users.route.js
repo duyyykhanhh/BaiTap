@@ -22,10 +22,7 @@ const checkWorkingHours = (req, res, next) => {
 };
 
 const countAPICalls = (req, res, next) => {
-  let countAPI = req.session.countAPI || 0;
-  countAPI++;
-  req.session.countAPI = countAPI;
-  res.locals.countAPI = countAPI;
+  req.session.countAPI = (req.session.countAPI || 0) + 1;
   next();
 };
 
@@ -37,8 +34,8 @@ router.get('/search', (req, res) => {
   const { query } = req;
   const findData = usersData.filter(
     user =>
-      user.uname.indexOf(query.key) !== -1 ||
-      user.fname.indexOf(query.key) !== -1
+      user.uname.includes(query.key) ||
+      user.fname.includes(query.key)
   );
   return res.json({ msg: 'success', data: findData });
 });
@@ -55,7 +52,7 @@ router.post('/create', (req, res) => {
 
 router.put('/update/:uname', (req, res) => {
   const { body, params } = req;
-  let index = usersData.findIndex(user => user.uname === params.uname);
+  const index = usersData.findIndex(user => user.uname === params.uname);
   if (index === -1) {
     return res.status(404).json({ msg: 'fail' });
   }
@@ -68,12 +65,28 @@ router.put('/update/:uname', (req, res) => {
 
 router.delete('/del/:uname', (req, res) => {
   const { params } = req;
-  let index = usersData.findIndex(user => user.uname === params.uname);
+  const index = usersData.findIndex(user => user.uname === params.uname);
   if (index === -1) {
     return res.status(404).json({ msg: 'fail' });
   }
   usersData.splice(index, 1);
   return res.json({ msg: 'success', data: usersData });
+});
+
+const authenticate = (req, res, next) => {
+  if (req.user.role === 'GUEST') {
+    next();
+  } else {
+    res.status(403).json({ message: 'Bạn không có quyền truy cập.' });
+  }
+};
+
+router.get('/movies', authenticate, (req, res) => {
+  // Xử lý yêu cầu khi người dùng đã xác thực
+});
+
+router.get('/no-access', (req, res) => {
+  // Xử lý yêu cầu khi người dùng không có quyền truy cập
 });
 
 module.exports = router;
